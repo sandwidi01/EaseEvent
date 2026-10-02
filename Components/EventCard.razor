@@ -1,0 +1,71 @@
+@* Carte d'événement : @bind-Value = liaison de données bidirectionnelle (modèle <-> champ). *@
+<div class="card mb-3">
+    <div class="card-body">
+        @if (!editing)
+        {
+            <h3 class="card-title h5">@Event.Title</h3>
+            <p class="mb-1">📅 @Event.Date?.ToString("dd/MM/yyyy") · 📍 @Event.Location</p>
+            <p class="mb-1">@Event.Description</p>
+            <p class="@(Full ? "text-danger" : "")">👥 @RegisteredCount / @Event.Capacity @(Full ? "(complet)" : "")</p>
+            <a class="btn btn-primary btn-sm" href="events/@Event.Id">Détails</a>
+            <button class="btn btn-secondary btn-sm" @onclick="StartEdit">Modifier</button>
+            <button class="btn btn-danger btn-sm" @onclick="() => OnDelete.InvokeAsync(Event.Id)">Supprimer</button>
+        }
+        else
+        {
+            <EditForm Model="draft" OnValidSubmit="SaveAsync">
+                <DataAnnotationsValidator />
+                <div class="mb-2">
+                    <label class="form-label">Titre</label>
+                    <InputText class="form-control" @bind-Value="draft!.Title" />
+                    <ValidationMessage For="() => draft.Title" />
+                </div>
+                <div class="mb-2">
+                    <label class="form-label">Date</label>
+                    <InputDate class="form-control" @bind-Value="draft.Date" />
+                    <ValidationMessage For="() => draft.Date" />
+                </div>
+                <div class="mb-2">
+                    <label class="form-label">Lieu</label>
+                    <InputText class="form-control" @bind-Value="draft.Location" />
+                    <ValidationMessage For="() => draft.Location" />
+                </div>
+                <div class="mb-2">
+                    <label class="form-label">Capacité</label>
+                    <InputNumber class="form-control" @bind-Value="draft.Capacity" />
+                    <ValidationMessage For="() => draft.Capacity" />
+                </div>
+                <div class="mb-2">
+                    <label class="form-label">Description</label>
+                    <InputTextArea class="form-control" rows="2" @bind-Value="draft.Description" />
+                    <ValidationMessage For="() => draft.Description" />
+                </div>
+                <p class="text-muted small">Aperçu : <strong>@(string.IsNullOrWhiteSpace(draft.Title) ? "…" : draft.Title)</strong> à @(string.IsNullOrWhiteSpace(draft.Location) ? "…" : draft.Location)</p>
+                <button type="submit" class="btn btn-primary btn-sm">Enregistrer</button>
+                <button type="button" class="btn btn-secondary btn-sm" @onclick="Cancel">Annuler</button>
+            </EditForm>
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public EventItem Event { get; set; } = default!;
+    [Parameter] public int RegisteredCount { get; set; }
+    [Parameter] public EventCallback<EventItem> OnSave { get; set; }
+    [Parameter] public EventCallback<int> OnDelete { get; set; }
+
+    private EventItem? draft;
+    private bool editing;
+    private bool Full => RegisteredCount >= Event.Capacity;
+
+    private void StartEdit() { draft = Event.Clone(); editing = true; }
+    private void Cancel() { draft = null; editing = false; }
+
+    private async Task SaveAsync()
+    {
+        draft!.Title = draft.Title.Trim();
+        draft.Location = draft.Location.Trim();
+        await OnSave.InvokeAsync(draft);
+        Cancel();
+    }
+}

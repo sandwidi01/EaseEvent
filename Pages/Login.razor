@@ -1,0 +1,33 @@
+@page "/login"
+@inject SessionService Session
+@inject NavigationManager Nav
+
+<PageTitle>Connexion</PageTitle>
+<h1>Connexion</h1>
+<EditForm Model="model" OnValidSubmit="LoginAsync" class="card card-body">
+    <DataAnnotationsValidator />
+    <div class="mb-2">
+        <label class="form-label">Nom</label>
+        <InputText class="form-control" @bind-Value="model.Name" />
+        <ValidationMessage For="() => model.Name" />
+    </div>
+    <div class="mb-2">
+        <label class="form-label">E-mail</label>
+        <InputText class="form-control" type="email" @bind-Value="model.Email" />
+        <ValidationMessage For="() => model.Email" />
+    </div>
+    <div><button type="submit" class="btn btn-primary">Se connecter</button></div>
+</EditForm>
+
+@code {
+    [SupplyParameterFromQuery] public string? ReturnUrl { get; set; }
+    private UserSession model = new();
+
+    private async Task LoginAsync()
+    {
+        await Session.LoginAsync(model);
+        // On n'accepte que les chemins relatifs internes (évite une redirection ouverte).
+        var target = ReturnUrl is not null && ReturnUrl.StartsWith('/') && !ReturnUrl.StartsWith("//") ? ReturnUrl.TrimStart('/') : "";
+        Nav.NavigateTo(target);
+    }
+}

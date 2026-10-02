@@ -1,0 +1,69 @@
+@page "/events"
+@inject EventService Service
+
+<PageTitle>Événements</PageTitle>
+<h1>Événements</h1>
+
+<input class="form-control mb-3" placeholder="Rechercher (titre ou lieu)" @bind="query" @bind:event="oninput" />
+
+@foreach (var ev in Filtered)
+{
+    <EventCard @key="ev.Id" Event="ev" RegisteredCount="@Service.Count(ev.Id)" OnSave="Service.UpdateEventAsync" OnDelete="DeleteAsync" />
+}
+@if (!Filtered.Any())
+{
+    <p>Aucun événement trouvé.</p>
+}
+
+<h2>Nouvel événement</h2>
+<EditForm Model="newEvent" OnValidSubmit="AddAsync" class="card card-body">
+    <DataAnnotationsValidator />
+    <div class="mb-2">
+        <label class="form-label">Titre</label>
+        <InputText class="form-control" @bind-Value="newEvent.Title" />
+        <ValidationMessage For="() => newEvent.Title" />
+    </div>
+    <div class="mb-2">
+        <label class="form-label">Date</label>
+        <InputDate class="form-control" @bind-Value="newEvent.Date" />
+        <ValidationMessage For="() => newEvent.Date" />
+    </div>
+    <div class="mb-2">
+        <label class="form-label">Lieu</label>
+        <InputText class="form-control" @bind-Value="newEvent.Location" />
+        <ValidationMessage For="() => newEvent.Location" />
+    </div>
+    <div class="mb-2">
+        <label class="form-label">Capacité</label>
+        <InputNumber class="form-control" @bind-Value="newEvent.Capacity" />
+        <ValidationMessage For="() => newEvent.Capacity" />
+    </div>
+    <div class="mb-2">
+        <label class="form-label">Description</label>
+        <InputTextArea class="form-control" rows="2" @bind-Value="newEvent.Description" />
+        <ValidationMessage For="() => newEvent.Description" />
+    </div>
+    <div><button type="submit" class="btn btn-primary">Ajouter</button></div>
+</EditForm>
+
+@code {
+    private string query = "";
+    private EventItem newEvent = new();
+
+    private IEnumerable<EventItem> Filtered =>
+        string.IsNullOrWhiteSpace(query)
+            ? Service.Events
+            : Service.Events.Where(e => $"{e.Title} {e.Location}".Contains(query.Trim(), StringComparison.OrdinalIgnoreCase));
+
+    protected override Task OnInitializedAsync() => Service.EnsureLoadedAsync();
+
+    private async Task AddAsync()
+    {
+        newEvent.Title = newEvent.Title.Trim();
+        newEvent.Location = newEvent.Location.Trim();
+        await Service.AddEventAsync(newEvent);
+        newEvent = new();
+    }
+
+    private Task DeleteAsync(int id) => Service.DeleteEventAsync(id);
+}

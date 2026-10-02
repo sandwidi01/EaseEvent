@@ -1,0 +1,51 @@
+@page "/events/{Id:int}"
+@inject EventService Service
+
+@if (!loaded)
+{
+    <p>Chargement…</p>
+}
+else if (ev is null)
+{
+    @* Erreur de routage : identifiant inconnu -> message 404 au lieu d'un écran blanc *@
+    <NotFoundMessage />
+}
+else
+{
+    var list = Service.GetRegistrations(ev.Id);
+    <PageTitle>@ev.Title</PageTitle>
+    <h1>@ev.Title</h1>
+    <p>📅 @ev.Date?.ToString("dd/MM/yyyy") · 📍 @ev.Location</p>
+    <p>@ev.Description</p>
+    <p>Inscrits : @list.Count / @ev.Capacity</p>
+    @if (list.Count >= ev.Capacity)
+    {
+        <p class="text-danger">Événement complet.</p>
+    }
+    else
+    {
+        <a class="btn btn-primary" href="events/@ev.Id/register">S'inscrire</a>
+    }
+    <h2 class="mt-3">Participants</h2>
+    @if (list.Count == 0) { <p>Aucun participant pour le moment.</p> }
+    <ul>
+        @foreach (var r in list)
+        {
+            <li @key="r.Id">@r.Name</li>
+        }
+    </ul>
+    <a href="events">← Retour</a>
+}
+
+@code {
+    [Parameter] public int Id { get; set; }
+    private EventItem? ev;
+    private bool loaded;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await Service.EnsureLoadedAsync();
+        ev = Service.GetEvent(Id);
+        loaded = true;
+    }
+}

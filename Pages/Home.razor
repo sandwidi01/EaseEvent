@@ -1,0 +1,20 @@
+@page "/"
+@implements IDisposable
+@inject EventService Events
+
+<PageTitle>EventEase</PageTitle>
+<h1>Bienvenue sur EventEase</h1>
+<p>Créez des événements, inscrivez des participants et suivez les présences.</p>
+<p><strong>@Events.Events.Count</strong> événements · <strong>@Events.Registrations.Count</strong> inscriptions</p>
+<a class="btn btn-primary" href="events">Voir les événements</a>
+
+@code {
+    protected override async Task OnInitializedAsync()
+    {
+        Events.Changed += Refresh;
+        await Events.EnsureLoadedAsync();
+    }
+
+    private void Refresh() => InvokeAsync(StateHasChanged);
+    public void Dispose() => Events.Changed -= Refresh;
+}

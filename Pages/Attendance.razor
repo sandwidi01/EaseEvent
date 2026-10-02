@@ -1,0 +1,66 @@
+@page "/attendance"
+@inject EventService Service
+@inject SessionService Session
+@inject NavigationManager Nav
+
+<PageTitle>Présences</PageTitle>
+<h1>Suivi des présences</h1>
+
+@if (!ready)
+{
+    <p>Chargement…</p>
+}
+else
+{
+    var list = Service.GetRegistrations(eventId);
+    var present = list.Count(r => r.Present);
+    var rate = list.Count == 0 ? 0 : (int)Math.Round(100.0 * present / list.Count);
+
+    <div class="mb-3">
+        <label class="form-label">Événement</label>
+        <select class="form-select" @bind="eventId">
+            @foreach (var e in Service.Events)
+            {
+                <option value="@e.Id">@e.Title</option>
+            }
+        </select>
+    </div>
+    <p>Présents : <strong>@present</strong> / @list.Count (@rate%)</p>
+    <table class="table">
+        <thead><tr><th>Nom</th><th>E-mail</th><th>Présent</th></tr></thead>
+        <tbody>
+            @foreach (var r in list)
+            {
+                var reg = r;
+                <tr @key="reg.Id">
+                    <td>@reg.Name</td>
+                    <td>@reg.Email</td>
+                    <td>
+                        <input type="checkbox" checked="@reg.Present" aria-label="Présence de @reg.Name"
+                               @onchange="async e => await Service.SetPresenceAsync(reg.Id, (bool)e.Value!)" />
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+    @if (list.Count == 0) { <p>Aucun inscrit pour cet événement.</p> }
+}
+
+@code {
+    private bool ready;
+    private int eventId;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await Session.EnsureLoadedAsync();
+        // Route protégée : redirection vers la connexion si aucune session.
+        if (!Session.IsLoggedIn)
+        {
+            Nav.NavigateTo("login?returnUrl=%2Fattendance", replace: true);
+            return;
+        }
+        await Service.EnsureLoadedAsync();
+        eventId = Service.Events.FirstOrDefault()?.Id ?? 0;
+        ready = true;
+    }
+}

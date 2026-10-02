@@ -1,0 +1,26 @@
+@inherits LayoutComponentBase
+<div class="page">
+    <div class="sidebar">
+        <NavMenu />
+    </div>
+
+    <main>
+        <article class="content px-4 pt-4">
+            @* Gestion d'erreurs : une exception dans une page n'écroule plus toute l'application *@
+            <ErrorBoundary @ref="boundary">
+                <ChildContent>@Body</ChildContent>
+                <ErrorContent Context="ex">
+                    <h1>Oups, une erreur est survenue</h1>
+                    <p class="text-danger">@ex.Message</p>
+                    <button class="btn btn-primary" @onclick="() => boundary?.Recover()">Réessayer</button>
+                </ErrorContent>
+            </ErrorBoundary>
+        </article>
+    </main>
+</div>
+
+@code {
+    private ErrorBoundary? boundary;
+
+    protected override void OnParametersSet() => boundary?.Recover();
+}
